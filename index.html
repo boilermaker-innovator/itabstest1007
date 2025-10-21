@@ -1,3 +1,725 @@
+Right, let me fix that Jon. The file reading isn’t working properly.
+
+**Your next step is:** Replace your code with this fixed version where file upload actually works.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iTabs Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .form-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        input[type="text"],
+        input[type="url"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        
+        input[type="file"] {
+            padding: 8px;
+        }
+        
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        small {
+            color: #666;
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        
+        .or-divider {
+            text-align: center;
+            margin: 15px 0;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .btn-generate {
+            background: #4CAF50;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-generate:hover {
+            background: #45a049;
+        }
+        
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-clear:hover {
+            background: #da190b;
+        }
+        
+        .btn-copy {
+            background: #2196F3;
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-copy:hover {
+            background: #0b7dda;
+        }
+        
+        .preview-section {
+            display: none;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .preview-section.active {
+            display: block;
+        }
+        
+        .preview-container {
+            position: relative;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+        
+        .preview-overlay {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            padding: 10px;
+            z-index: 10;
+            display: none;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            width: 90%;
+        }
+        
+        .preview-overlay.show {
+            display: block;
+        }
+        
+        .preview-overlay.top {
+            top: 10px;
+        }
+        
+        .preview-overlay.center {
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .preview-overlay.bottom {
+            bottom: 10px;
+        }
+        
+        .itabs-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(33, 150, 243, 0.9);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+            z-index: 20;
+        }
+        
+        .itabs-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .itabs-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .itabs-popup.active {
+            display: flex;
+        }
+        
+        .popup-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .popup-close {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            text-align: right;
+            z-index: 1;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: auto;
+        }
+        
+        .popup-section {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .popup-section:last-child {
+            border-bottom: none;
+        }
+        
+        .popup-section h3 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        
+        .popup-section p {
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .popup-button {
+            display: block;
+            width: calc(100% - 40px);
+            margin: 20px;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .popup-button:hover {
+            background: #45a049;
+        }
+        
+        .code-section {
+            margin-top: 20px;
+        }
+        
+        .code-box {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        
+        .success-message {
+            display: none;
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .success-message.active {
+            display: block;
+        }
+
+        .warning-message {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .file-status {
+            color: #28a745;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .file-status.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>iTabs Generator</h1>
+    <p class="subtitle">Create your information popup in minutes</p>
+
+    <div class="form-section">
+        <h2>Build Your iTabs</h2>
+        
+        <div class="form-group">
+            <label for="imageFile">Upload Product Image:</label>
+            <input type="file" id="imageFile" accept="image/*">
+            <small>Choose an image from your device</small>
+            <div id="fileStatus" class="file-status">✓ Image loaded and ready</div>
+        </div>
+
+        <div class="or-divider">- OR -</div>
+        
+        <div class="form-group">
+            <label for="imageUrl">Product Image URL:</label>
+            <input type="url" id="imageUrl" placeholder="https://i.ibb.co/your-image.jpg">
+            <small>If you already have your image online, paste the URL here</small>
+        </div>
+
+        <div class="warning-message" id="imageWarning" style="display: none;">
+            Note: Uploaded images will work in preview, but for the final code to work on your website, you'll need to upload your image to an image hosting service and use that URL.
+        </div>
+        
+        <div class="form-group">
+            <label for="overlayText">Overlay Text (Optional):</label>
+            <input type="text" id="overlayText" placeholder="e.g., Click the i for more info" value="Click the i for more info">
+            <small>Short text that appears on the image - leave blank for no overlay</small>
+        </div>
+
+        <div class="form-group">
+            <label for="overlayPosition">Overlay Position:</label>
+            <select id="overlayPosition">
+                <option value="top">Top</option>
+                <option value="center" selected>Center</option>
+                <option value="bottom">Bottom</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="section1">What is it?</label>
+            <textarea id="section1">iTabs is a simple information popup system that helps explain confusing products to customers. Just add a little "i" button to any product image, and customers can click to learn more in plain English.</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="section2">Why do I need it?</label>
+            <textarea id="section2">Customers abandon products they don't understand. Technical jargon, part numbers, and confusing specifications lose you sales. iTabs translates complex products into simple explanations that anyone can understand.</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="section3">How does it work?</label>
+            <textarea id="section3">Click the "i" button on any product image. A popup appears with clear sections explaining what the product is, why you need it, and what makes it special. Scroll through the information, then click the button at the bottom to take action.</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="section4">What makes it different?</label>
+            <textarea id="section4">iTabs works on any website, mobile or desktop. No complicated setup, no database required. It's self-explanatory - the product demonstrates itself. Business owners can create iTabs in minutes, and customers understand products instantly.</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="buttonText">Button Text:</label>
+            <input type="text" id="buttonText" value="Get iTabs For Your Business">
+        </div>
+        
+        <div class="form-group">
+            <label for="buttonLink">Button Links To:</label>
+            <input type="url" id="buttonLink" placeholder="https://your-website.com" value="https://example.com/contact">
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-generate" id="generateBtn">Generate iTabs Code</button>
+            <button class="btn-clear" id="clearBtn">Clear Form</button>
+        </div>
+    </div>
+
+    <div class="preview-section" id="previewSection">
+        <h2>Preview Your iTabs</h2>
+        <p style="color: #666; margin-bottom: 20px;">Click the "i" button to test your popup</p>
+        
+        <div class="preview-container" id="previewContainer">
+            <img id="previewImage" class="preview-image" src="" alt="Product">
+            <div id="previewOverlay" class="preview-overlay"></div>
+            <div class="itabs-button" id="previewItabsBtn">i</div>
+        </div>
+        
+        <div class="code-section">
+            <h3>Your iTabs Code</h3>
+            <p style="color: #666; margin-bottom: 10px;">Copy this code and paste it on your website:</p>
+            <div class="code-box" id="codeBox"></div>
+            <button class="btn-copy" id="copyBtn">Copy Code</button>
+            <div class="success-message" id="successMessage">Code copied to clipboard!</div>
+        </div>
+    </div>
+
+    <div class="itabs-popup" id="itabsPopup">
+        <div class="popup-content" id="popupContent">
+            <div class="popup-close">
+                <button class="close-btn" id="closeBtn">&times;</button>
+            </div>
+            <div class="popup-section">
+                <h3>What is it?</h3>
+                <p id="popupSection1"></p>
+            </div>
+            <div class="popup-section">
+                <h3>Why do I need it?</h3>
+                <p id="popupSection2"></p>
+            </div>
+            <div class="popup-section">
+                <h3>How does it work?</h3>
+                <p id="popupSection3"></p>
+            </div>
+            <div class="popup-section">
+                <h3>What makes it different?</h3>
+                <p id="popupSection4"></p>
+            </div>
+            <a href="#" id="popupButton" class="popup-button" target="_blank"></a>
+        </div>
+    </div>
+
+    <script>
+        let uploadedImageData = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateBtn = document.getElementById('generateBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const previewItabsBtn = document.getElementById('previewItabsBtn');
+            const closeBtn = document.getElementById('closeBtn');
+            const itabsPopup = document.getElementById('itabsPopup');
+            const popupContent = document.getElementById('popupContent');
+            const imageFile = document.getElementById('imageFile');
+            const imageUrl = document.getElementById('imageUrl');
+            const fileStatus = document.getElementById('fileStatus');
+            
+            generateBtn.addEventListener('click', generatePreview);
+            clearBtn.addEventListener('click', clearForm);
+            copyBtn.addEventListener('click', copyCode);
+            previewItabsBtn.addEventListener('click', openPopup);
+            closeBtn.addEventListener('click', closePopup);
+            
+            // Handle file upload
+            imageFile.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        uploadedImageData = event.target.result;
+                        fileStatus.classList.add('show');
+                        imageUrl.value = ''; // Clear URL field
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Please select a valid image file');
+                    imageFile.value = '';
+                }
+            });
+
+            // Handle URL input
+            imageUrl.addEventListener('input', function() {
+                if (imageUrl.value.trim() !== '') {
+                    imageFile.value = ''; // Clear file input
+                    uploadedImageData = null;
+                    fileStatus.classList.remove('show');
+                }
+            });
+            
+            itabsPopup.addEventListener('click', function(e) {
+                if (e.target === itabsPopup) {
+                    closePopup();
+                }
+            });
+            
+            popupContent.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+        
+        function generatePreview() {
+            let imageSource = '';
+            const imageWarning = document.getElementById('imageWarning');
+            const imageUrlInput = document.getElementById('imageUrl');
+
+            // Determine which image source to use
+            if (uploadedImageData) {
+                imageSource = uploadedImageData;
+                imageWarning.style.display = 'block';
+            } else if (imageUrlInput.value.trim() !== '') {
+                imageSource = imageUrlInput.value.trim();
+                imageWarning.style.display = 'none';
+            } else {
+                alert('Please upload an image or enter an image URL');
+                return;
+            }
+
+            const overlayText = document.getElementById('overlayText').value;
+            const overlayPosition = document.getElementById('overlayPosition').value;
+            const section1 = document.getElementById('section1').value;
+            const section2 = document.getElementById('section2').value;
+            const section3 = document.getElementById('section3').value;
+            const section4 = document.getElementById('section4').value;
+            const buttonText = document.getElementById('buttonText').value;
+            const buttonLink = document.getElementById('buttonLink').value;
+            
+            // Set image
+            const previewImg = document.getElementById('previewImage');
+            previewImg.src = imageSource;
+            
+            // Handle overlay text
+            const previewOverlay = document.getElementById('previewOverlay');
+            
+            if (overlayText.trim() !== '') {
+                previewOverlay.textContent = overlayText;
+                previewOverlay.className = 'preview-overlay show ' + overlayPosition;
+            } else {
+                previewOverlay.className = 'preview-overlay';
+            }
+            
+            // Set popup content
+            document.getElementById('popupSection1').textContent = section1;
+            document.getElementById('popupSection2').textContent = section2;
+            document.getElementById('popupSection3').textContent = section3;
+            document.getElementById('popupSection4').textContent = section4;
+            document.getElementById('popupButton').textContent = buttonText;
+            document.getElementById('popupButton').href = buttonLink;
+            
+            // Generate code - use URL for code generation
+            let codeImageUrl = uploadedImageData ? 'YOUR-IMAGE-URL-HERE' : imageUrlInput.value.trim();
+            const code = generateCode(codeImageUrl, overlayText, overlayPosition, section1, section2, section3, section4, buttonText, buttonLink);
+            document.getElementById('codeBox').textContent = code;
+            
+            // Show preview section
+            document.getElementById('previewSection').classList.add('active');
+            document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateCode(imageUrl, overlayText, overlayPosition, s1, s2, s3, s4, btnText, btnLink) {
+            const positionStyles = {
+                'top': 'top: 10px; left: 50%; transform: translateX(-50%);',
+                'center': 'top: 50%; left: 50%; transform: translate(-50%, -50%);',
+                'bottom': 'bottom: 10px; left: 50%; transform: translateX(-50%);'
+            };
+            
+            const overlayCode = overlayText.trim() !== '' 
+                ? `    <div style="position: absolute; ${positionStyles[overlayPosition]} color: white; font-weight: bold; font-size: 18px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); padding: 10px; z-index: 10; text-align: center; width: 90%;">${overlayText}</div>\n`
+                : '';
+            
+            return `<!-- iTabs Code - Paste this where you want the product image -->
+<div style="position: relative; display: inline-block;">
+    <img src="${imageUrl}" alt="Product" style="max-width: 100%; height: auto; border-radius: 8px;">
+${overlayCode}    <div id="itabsBtn" style="position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; background: rgba(33, 150, 243, 0.9); color: white; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 20;">i</div>
+</div>
+
+<div id="itabsPopup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div id="itabsContent" style="background: white; border-radius: 8px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;">
+        <div style="position: sticky; top: 0; background: white; padding: 15px; border-bottom: 1px solid #eee; text-align: right;">
+            <button id="itabsClose" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+        </div>
+        <div style="padding: 20px; border-bottom: 1px solid #eee;">
+            <h3 style="color: #2196F3; margin-bottom: 10px;">What is it?</h3>
+            <p>${s1}</p>
+        </div>
+        <div style="padding: 20px; border-bottom: 1px solid #eee;">
+            <h3 style="color: #2196F3; margin-bottom: 10px;">Why do I need it?</h3>
+            <p>${s2}</p>
+        </div>
+        <div style="padding: 20px; border-bottom: 1px solid #eee;">
+            <h3 style="color: #2196F3; margin-bottom: 10px;">How does it work?</h3>
+            <p>${s3}</p>
+        </div>
+        <div style="padding: 20px; border-bottom: 1px solid #eee;">
+            <h3 style="color: #2196F3; margin-bottom: 10px;">What makes it different?</h3>
+            <p>${s4}</p>
+        </div>
+        <a href="${btnLink}" target="_blank" style="display: block; width: calc(100% - 40px); margin: 20px; padding: 15px; background: #4CAF50; color: white; text-align: center; text-decoration: none; border-radius: 4px; font-weight: bold;">${btnText}</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('itabsBtn').addEventListener('click', function() {
+        document.getElementById('itabsPopup').style.display = 'flex';
+    });
+    
+    document.getElementById('itabsClose').addEventListener('click', function() {
+        document.getElementById('itabsPopup').style.display = 'none';
+    });
+    
+    document.getElementById('itabsPopup').addEventListener('click', function(e) {
+        if (e.target.id === 'itabsPopup') {
+            document.getElementById('itabsPopup').style.display = 'none';
+        }
+    });
+    
+    document.getElementById('itabsContent').addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+});
+</scr` + `ipt>`;
+        }
+        
+        function clearForm() {
+            document.getElementById('imageFile').value = '';
+            document.getElementById('imageUrl').value = '';
+            document.getElementById('overlayText').value = '';
+            document.getElementById('overlayPosition').value = 'center';
+            document.getElementById('section1').value = '';
+            document.getElementById('section2').value = '';
+            document.getElementById('section3').value = '';
+            document.getElementById('section4').value = '';
+            document.getElementById('buttonText').value = '';
+            document.getElementById('buttonLink').value = '';
+            document.getElementById('previewSection').classList.remove('active');
+            document.getElementById('imageWarning').style.display = 'none';
+            document.getElementById('fileStatus').classList.remove('show');
+            uploadedImageData = null;
+        }
+        
+        function openPopup() {
+            document.getElementById('itabsPopup').classList.add('active');
+        }
+        
+        function closePopup() {
+            document.getElementById('itabsPopup').classList.remove('active');
+        }
+        
+        function copyCode() {
+            const codeBox = document.getElementById('codeBox');
+            const textArea = document.createElement('textarea');
+            textArea.value = codeBox.textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const successMessage = document.getElementById('successMessage');
+            successMessage.classList.add('active');
+            setTimeout(() => {
+                successMessage.classList.remove('active');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+```
+
+**What I fixed:**
+
+1. Changed file upload logic to properly store the image data
+1. Added a green checkmark message “✓ Image loaded and ready” when file is selected
+1. Fixed the image display to use the uploaded data correctly
+1. Better error handling for invalid files
+
+**Now try:**
+
+1. Click “Choose File”
+1. Pick an image
+1. You’ll see “✓ Image loaded and ready” appear
+1. Click “Generate iTabs Code”
+1. Your uploaded image should appear in the preview!
+
+Ready to test this fixed version?​​​​​​​​​​​​​​​​
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
